@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1707373253758,
+  "lastUpdate": 1707375888132,
   "repoUrl": "https://github.com/InstituteforDiseaseModeling/abm-software-comparison",
   "entries": {
     "Agents.jl Benchmark": [
@@ -30,6 +30,42 @@ window.BENCHMARK_DATA = {
             "value": 251810629,
             "unit": "ns",
             "extra": "gctime=0\nmemory=2658416\nallocs=57663\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"evals_set\":false,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "56368533+krosenfeld-IDM@users.noreply.github.com",
+            "name": "Katherine Rosenfeld",
+            "username": "krosenfeld-IDM"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "d4b499a294555f9408621395d3be298f522f121e",
+          "message": "Update agents.yml\n\nmain branch",
+          "timestamp": "2024-02-07T22:30:59-08:00",
+          "tree_id": "fe2948223edb0dacaaa1c973609c6fcc3c893516",
+          "url": "https://github.com/InstituteforDiseaseModeling/abm-software-comparison/commit/d4b499a294555f9408621395d3be298f522f121e"
+        },
+        "date": 1707375887765,
+        "tool": "julia",
+        "benches": [
+          {
+            "name": "A/4",
+            "value": 244386469,
+            "unit": "ns",
+            "extra": "gctime=0\nmemory=2651296\nallocs=57522\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"evals_set\":false,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
+          },
+          {
+            "name": "A/6",
+            "value": 439909042800,
+            "unit": "ns",
+            "extra": "gctime=11498817\nmemory=98228320\nallocs=2040635\nparams={\"gctrial\":true,\"time_tolerance\":0.05,\"evals_set\":false,\"samples\":10000,\"evals\":1,\"gcsample\":false,\"seconds\":5,\"overhead\":0,\"memory_tolerance\":0.01}"
           }
         ]
       }
