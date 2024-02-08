@@ -13,6 +13,7 @@ permissions:
 jobs:
   benchmark:
     name: Run Agents.jl benchmark example
+    if: ${{ github.event.comment.body == '/build-agents.jl' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
