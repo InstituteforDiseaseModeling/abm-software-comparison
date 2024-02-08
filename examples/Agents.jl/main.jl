@@ -1,5 +1,5 @@
 using BenchmarkTools
-
+include("ModelA.jl")
 import .ModelA
 
 suite = BenchmarkGroup()
