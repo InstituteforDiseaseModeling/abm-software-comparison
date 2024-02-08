@@ -51,11 +51,11 @@ jobs:
         with:
           path: ./cache
           key: ${{ runner.os }}-benchmark
-      - name: Store benchmark result
+      - name: Store benchmark result to cache
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Agents.jl result
-          tool: 'Agents.jl'
+          tool: 'julia'
           output-file-path: examples/Agents.jl/output.json
           external-data-json-path: ./cache/agents-data.json
           # Use personal access token instead of GITHUB_TOKEN due to https://github.community/t/github-action-not-triggering-gh-pages-upon-push/16096
@@ -63,11 +63,11 @@ jobs:
           comment-on-alert: true
           alert-comment-cc-users: '@krosenfeld-IDM'
       # gh-pages branch is updated and pushed automatically with extracted benchmark data
-      - name: Store benchmark result
+      - name: Store benchmark result to gh-pages
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: Agents.jl Benchmark
-          tool: 'Agents.jl'
+          tool: 'julia'
           output-file-path: examples/Agents.jl/output.json
           # Access token to deploy GitHub Pages branch
           github-token: ${{ secrets.GITHUB_TOKEN }}
