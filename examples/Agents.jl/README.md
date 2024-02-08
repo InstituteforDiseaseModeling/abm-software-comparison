@@ -6,7 +6,7 @@ After installing julia, navigate to the `examples/Agents.jl` directory:
 ```
 julia
 using Pkg
-Pkg.activate()
+Pkg.activate(".")
 ```
 if this is the first time using the package you'll need to install the dependencies:
 ```

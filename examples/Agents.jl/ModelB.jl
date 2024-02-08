@@ -41,7 +41,7 @@ function initialize(β::AbstractFloat, σ::AbstractFloat,  γ::AbstractFloat;
         "β" => β,
         "γ" => γ,
         "σ" => σ,
-        "migration_rate" => 0.001
+        "migration_rate" => 0.001,
         "foi" => zeros(nv(space.graph))
     )
 
@@ -64,9 +64,12 @@ function initialize(β::AbstractFloat, σ::AbstractFloat,  γ::AbstractFloat;
         agent = model[rand(inds)]
         agent.status = :I # Infected
     end
+    # initialize force of infection
+    foi!(model)
 
     return model
 end
+initialize() = initialize(1/10, 2.5, 1/3)
 
 function agent_step!(agent, model)
     migrate!(agent, model)
@@ -78,12 +81,27 @@ function model_step!(model)
     foi!(model)
 end
 
-# function to count states
-infectious(x) = count(i == :I for i in x)
-susceptible(x) = count(i == :S for i in x)
-exposed(x) = count(i == :E for i in x)
-infectious(x) = count(i == :I for i in x)
-recovered(x) = count(i == :R for i in x)
+"""
+Calculate the force of infection in each node
+"""
+function foi!(model)
+    # Initialize a dictionary to hold the infectious agent counts
+    num = zeros(nv(model.space.graph))
+    denom = zeros(nv(model.space.graph))
+    for item in model.agents
+        # Filter items by states == :I
+        if item.status == :I
+            # Increment the count for the item's pos
+            num[item.pos] += 1
+        end
+        denom[item.pos] += 1
+    end
+
+    for node in vertices(model.space.graph)
+        model.properties["foi"][node] = num[node] / denom[node]
+    end
+
+end
 
 """
 Constant migration rate, could easily be incorporated into the graph edges
@@ -99,18 +117,9 @@ end
 Transmit within the node
 """
 function transmit!(agent, model)
-    if agent.status == :I
-        # agents in the node
-        ids = ids_in_position(agent.pos, model)
-        # force of infection
-        foi = model.properties.β / length(ids)
-        # loop over all other agents ($$$$)
-        for id in ids
-            if model.agents[id].status == :S
-                if rand() < foi
-                    model.agents[id].status = :E
-                end
-            end
+    if agent.status == :S
+        if rand() < model.properties["foi"][agent.pos]
+            agent.status = :E
         end
     end
 end
@@ -120,11 +129,11 @@ Update status
 """
 function update!(agent, model)
     if agent.status == :E
-        if rand() < model.properties.σ 
+        if rand() < model.properties["σ"]
             agent.status = :I
         end        
     elseif agent.status == :I
-        if rand() < model.properties.γ 
+        if rand() < model.properties["γ"] 
             agent.status = :R
         end
     end
@@ -142,12 +151,18 @@ function run_model(num_agents::Integer = 10^4)
     # Initialize
     model = initialize(β, σ, γ; num_agents=num_agents)
 
+    # function to count states
+    susceptible(x) = count(i == :S for i in x)
+    exposed(x) = count(i == :E for i in x)
+    infectious(x) = count(i == :I for i in x)
+    recovered(x) = count(i == :R for i in x)
+
     # Data collection
     to_collect = [(:status, f) for f in (susceptible, exposed, infectious, recovered)]
     to_collect = [to_collect; [(:status, f, (a) -> a.pos == node) for node in 1:nv(model.space.graph) for f in (susceptible, exposed, infectious, recovered)]]
 
     # Run
-    data, _ = run!(model, agent_step!, 100; adata=to_collect)
+    data, _ = run!(model, agent_step!, model_step!, 100; adata=to_collect)
 
     return data
 end
@@ -179,3 +194,4 @@ function make_plots(data)
 end
 
 end
+
