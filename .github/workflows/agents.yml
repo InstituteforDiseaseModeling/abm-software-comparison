@@ -1,6 +1,8 @@
 name: Agents.jl
 on:
   push:
+    branches:
+      - main
       
 permissions:
   # deployments permission to deploy GitHub pages website
@@ -11,8 +13,8 @@ permissions:
 jobs:
   benchmark:
     name: Run Agents.jl benchmark example
-    if: ${{ github.event.comment.body == '/build-agents.jl' }}    
     runs-on: ${{ matrix.os }}
+    if: "contains(github.event.head_commit.message, '\\build')"
     strategy:
       fail-fast: false
       matrix:
