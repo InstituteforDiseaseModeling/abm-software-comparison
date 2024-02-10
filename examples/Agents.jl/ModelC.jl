@@ -42,10 +42,11 @@ function initialize(E, I, R0::Real;
         "E" => E,
         "I" => I,
         "R0" => R0,
-        "mu" => 0.03,
-        "nu" => 0.0125,
+        "mu" => 0.03, # crude yearly birth rate
+        "nu" => 0.0125, # crude yearly mortality rate
         "foi" => 0
     )
+    # convert to daily rates
     properties["mu_daily"] = log(1 + properties["mu"]) / 365
     properties["nu_daily"] = log(1 - properties["nu"]) / 365
 
@@ -59,9 +60,9 @@ function initialize(E, I, R0::Real;
 
     # initialize recovered fraction
     num_recovered = Integer(num_agents - num_agents / model.properties["R0"])
-    # S = np.uint32(np.round(params.pop_size / params.r_naught))  # * 1.0625
+    inds = shuffle(1:num_agents)
     for n in 1:num_recovered
-        agent = model[rand(1:num_agents)]
+        agent = model[inds[n]]
         agent.status = :R # Recovered
     end
 
@@ -76,7 +77,7 @@ function initialize(E, I, R0::Real;
     return model
 end
 initialize() = initialize(ExposureDiseaseParams(8, 1), InfectiousDiseaseParams(8, 1), 10)
-initialize(; num_agents) = initialize(ExposureDiseaseParams(8, 1), InfectiousDiseaseParams(8, 1), 10, num_agents=num_agents)
+initialize(; num_agents=10^4) = initialize(ExposureDiseaseParams(8, 1), InfectiousDiseaseParams(8, 1), 10, num_agents=num_agents)
 
 function foi!(model)
     num_infections = 0
@@ -85,7 +86,7 @@ function foi!(model)
             num_infections += 1
         end
     end
-    model.properties["foi"] = max(1, num_infections) * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
+    model.properties["foi"] = num_infections * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
 end
 
 function agent_step!(agent, model)
@@ -169,17 +170,3 @@ function run_model(;num_days::Integer=365, num_agents::Integer = 10^4)
 end
 
 end
-
-import .ModelC
-using CairoMakie
-
-@time data = ModelC.run_model(num_days=365, num_agents=10^6)
-# blue, gold, green, purple
-fig1 = Figure()
-ax = Axis(fig1[1,1])
-lines!(ax, data.step, data.susceptible_status, label="susceptble")
-lines!(ax, data.step, data.exposed_status, label="exposure")
-lines!(ax, data.step, data.infectious_status, label="infectious")
-# lines!(ax, data.step, data.recovered_status, label="recovered")
-fig1
-# save("fig1.png", fig1)
