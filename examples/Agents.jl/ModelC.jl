@@ -20,7 +20,17 @@ mutable struct PoorSoul <: AbstractAgent    # id, days_infected, status, timer
     timer::Integer
 end
 
-function initialize(E::NamedTuple, I::NamedTuple, R0::Real;
+abstract type AbstractDiseaseParams end
+struct ExposureDiseaseParams <: AbstractDiseaseParams
+    mean::Real
+    sigma::Real
+end
+struct InfectiousDiseaseParams <: AbstractDiseaseParams
+    mean::Real
+    sigma::Real
+end
+
+function initialize(E, I, R0::Real;
     num_agents::Integer = 10^6, 
     initial_infections::Integer = 100, 
     seed::Integer = 42)
@@ -33,11 +43,11 @@ function initialize(E::NamedTuple, I::NamedTuple, R0::Real;
         "I" => I,
         "R0" => R0,
         "mu" => 0.03,
-        "nu" => 1/80,
+        "nu" => 0.0125,
         "foi" => 0
     )
-    properties["mu_daily"] = 0 # TODO
-    properties["nu_daily"] = 0 # TODO
+    properties["mu_daily"] = log(1 + properties["mu"]) / 365
+    properties["nu_daily"] = log(1 - properties["nu"]) / 365
 
     # Initialize the model
     model = ABM(PoorSoul; properties, rng)
@@ -58,14 +68,15 @@ function initialize(E::NamedTuple, I::NamedTuple, R0::Real;
     # add initial outbreak
     for n in 1:initial_infections
         agent = model[rand(1:num_agents)]
-        infect!(agent, model)
+        expose!(agent, model)
     end
     # initialize force of infection
     foi!(model)
 
     return model
 end
-initialize() = initialize((mean=8, sigma=3), (mean=8, sigma=3), 10)
+initialize() = initialize(ExposureDiseaseParams(8, 1), InfectiousDiseaseParams(8, 1), 10)
+initialize(; num_agents) = initialize(ExposureDiseaseParams(8, 1), InfectiousDiseaseParams(8, 1), 10, num_agents=num_agents)
 
 function foi!(model)
     num_infections = 0
@@ -74,7 +85,7 @@ function foi!(model)
             num_infections += 1
         end
     end
-    model.properties["foi"] = num_infections * model.properties["R0"] * model.properties["I"].mean / length(model.agents)
+    model.properties["foi"] = max(1, num_infections) * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
 end
 
 function agent_step!(agent, model)
@@ -87,18 +98,37 @@ function model_step!(model)
     foi!(model)
 end
 
-function infect!(agent, model)
+expose!(agent, model) = start_timer!(agent, model.properties["E"])
+function start_timer!(agent, params::ExposureDiseaseParams)
     agent.status = :E
-    agent.timer = round(typeof(agent.timer), max(0, model.properties["E"].sigma*randn() + model.properties["E"].mean))
+    agent.timer = round(typeof(agent.timer), max(0, params.sigma*randn() + params.mean))
 end
+
+infectious!(agent, model) = start_timer!(agent, model.properties["I"])
+function start_timer!(agent, params::InfectiousDiseaseParams)
+    agent.status = :I
+    agent.timer = round(typeof(agent.timer), max(0, params.sigma*randn() + params.mean))
+end
+
+recover!(agent, model) = agent.status = :R
 
 function update!(agent, model)
     if agent.status == :S
-        if rand < model.properties["foi"]
-            infect!(agent, model)
+        if rand() < model.properties["foi"]
+            expose!(agent, model)
         end
     elseif agent.status == :E
+        if agent.timer == 0
+            infectious!(agent, model)
+        else
+            agent.timer -= 1
+        end
     elseif agent.status == :I
+        if agent.timer == 0
+            recover!(agent, model)
+        else
+            agent.timer -= 1
+        end
     end
 end
 
@@ -118,8 +148,38 @@ function deaths!(model)
 end
 #########################
 
+function run_model(;num_days::Integer=365, num_agents::Integer = 10^4)
+
+    # Initialize
+    model = initialize(num_agents=num_agents)
+
+    # function to count states
+    susceptible(x) = count(i == :S for i in x)
+    exposed(x) = count(i == :E for i in x)
+    infectious(x) = count(i == :I for i in x)
+    recovered(x) = count(i == :R for i in x)
+
+    # Data collection
+    to_collect = [(:status, f) for f in (susceptible, exposed, infectious, recovered)]
+
+    # Run
+    data, _ = run!(model, agent_step!, model_step!, num_days; adata=to_collect)
+
+    return data
+end
+
 end
 
 import .ModelC
+using CairoMakie
 
-model = ModelC.initialize()
+@time data = ModelC.run_model(num_days=365, num_agents=10^6)
+# blue, gold, green, purple
+fig1 = Figure()
+ax = Axis(fig1[1,1])
+lines!(ax, data.step, data.susceptible_status, label="susceptble")
+lines!(ax, data.step, data.exposed_status, label="exposure")
+lines!(ax, data.step, data.infectious_status, label="infectious")
+# lines!(ax, data.step, data.recovered_status, label="recovered")
+fig1
+# save("fig1.png", fig1)
