@@ -19,6 +19,7 @@ suite["B"][6] = @benchmarkable ModelB.run_model(10^6)
 
 suite["C"] = BenchmarkGroup()
 suite["C"][6] = @benchmarkable ModelC.run_model(num_agents=10^6, num_days=35*365)
+suite["C"][4] = @benchmarkable ModelC.run_model(num_agents=10^4, num_days=35*365)
 
 tune!(suite)
 results = run(suite, verbose = true)
