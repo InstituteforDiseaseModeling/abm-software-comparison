@@ -93,18 +93,20 @@ function model_step!(model)
     foi!(model)
 end
 
+###############################
+
 function foi!(model)
-    num_infections = 0
+    num_infectious = 0
     num_susceptible = 0
     for (id, agent) in model.agents
         if agent.status == :I
-            num_infections += 1
+            num_infectious += 1
         elseif agent.status == :S
             num_susceptible += 1
         end
     end
-    model.properties["foi"] = num_infections * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
-    λ = num_susceptible * num_infections * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
+    model.properties["foi"] = num_infectious * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
+    λ = num_susceptible * num_infectious * model.properties["R0"] / model.properties["I"].mean / length(model.agents)
     model.properties["num_exposures"] = rand(Poisson(λ))
 end
 
@@ -123,10 +125,8 @@ infectious!(agent, model) = start_timer!(agent, model.properties["I"])
 recover!(agent, model) = agent.status = :R
 
 function update!(agent, model)
-    if (model.properties["num_exposures"] > 0) && (agent.status == :S)
-        if rand() < model.properties["foi"]
-            expose!(agent, model)
-        end
+    if (model.properties["num_exposures"] > 0) && (agent.status == :S) # this isn't great; just walking down the agent list
+        expose!(agent, model)
         model.properties["num_exposures"] -= 1 # not thread safe
     elseif agent.status == :E
         if agent.timer == 0
