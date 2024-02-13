@@ -19,4 +19,7 @@ import .ModelA
 ModelA.run_model()
 ```
 
+## Run benchmarks
+Commit including `\build`.
+
 - [git repository](https://github.com/JuliaDynamics/Agents.jl)
